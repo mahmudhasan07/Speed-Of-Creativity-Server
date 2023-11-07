@@ -16,9 +16,13 @@ app.get('/', async (req, res) => {
     res.send('Welcome to Server my Self')
 })
 
+console.log(process.env.DB_USER);
+console.log(process.env.DB_PASS);
+console.log(process.env.VERIFY_TOKEN);
+
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const uri = "mongodb+srv://speed-of-creativity:v2eLmRPRXH2GgzF5@cluster0.oqk84kq.mongodb.net/?retryWrites=true&w=majority";
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.oqk84kq.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -32,6 +36,20 @@ const client = new MongoClient(uri, {
 const verifyToken = async (req, res, next) => {
     const token = req.cookies?.token
     console.log("verfy token", token);
+    if (!token) 
+    {
+        return res.status(401).send({ auth: false, message: 'UnAuthorize' });
+    }
+    jwt.verify(token, process.env.VERIFY_TOKEN , async(error, decoded)=>{
+        if(error){
+            return res.status(401).send({ auth: false, message: "You can't Access this" });
+        }
+        console.log("Mahmud paise", decoded);
+        req.user = decoded
+        next()
+    })
+
+
 }
 
 async function run() {
@@ -97,7 +115,7 @@ async function run() {
         app.post('/jwt', async (req, res) => {
             const email = req.body
             // console.log(email);
-            const token = jwt.sign(email, "secret", { expiresIn: "2h" })
+            const token = jwt.sign(email, process.env.VERIFY_TOKEN, { expiresIn: "2h" })
             // console.log(token);
             res
                 .cookie("token", token, {
