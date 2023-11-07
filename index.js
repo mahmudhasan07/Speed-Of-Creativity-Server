@@ -98,7 +98,9 @@ async function run() {
             res.send(result)
         })
 
-        app.get(`/submitted-assignment/:email` )
+        app.get(`/submitted-assignment/:email`, async(req,res)=>{
+            const email=req.params.email
+        } )
 
 
 
