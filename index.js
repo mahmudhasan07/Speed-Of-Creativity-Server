@@ -114,7 +114,7 @@ async function run() {
 
         app.post('/jwt', async (req, res) => {
             const email = req.body
-            // console.log(email);
+            console.log("email paise",email);
             const token = jwt.sign(email, process.env.VERIFY_TOKEN, { expiresIn: "2h" })
             // console.log(token);
             res
