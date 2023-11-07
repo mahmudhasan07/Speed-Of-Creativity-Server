@@ -6,7 +6,7 @@ require('dotenv').config()
 const app = express()
 const port = process.env.PORT || 5000
 app.use(cors({
-    origin: [`http://localhost:5173`],
+    origin: [`http://localhost:5173`, `http://localhost:5174`],
     credentials: true
 }))
 app.use(express.json())
@@ -36,12 +36,11 @@ const client = new MongoClient(uri, {
 const verifyToken = async (req, res, next) => {
     const token = req.cookies?.token
     console.log("verfy token", token);
-    if (!token) 
-    {
+    if (!token) {
         return res.status(401).send({ auth: false, message: 'UnAuthorize' });
     }
-    jwt.verify(token, process.env.VERIFY_TOKEN , async(error, decoded)=>{
-        if(error){
+    jwt.verify(token, process.env.VERIFY_TOKEN, async (error, decoded) => {
+        if (error) {
             return res.status(401).send({ auth: false, message: "You can't Access this" });
         }
         console.log("Mahmud paise", decoded);
@@ -81,26 +80,27 @@ async function run() {
             res.send(result)
         })
 
-        app.get(`/items/:id`, async(req,res)=>{
+        app.get(`/items/:id`, async (req, res) => {
             const id = req.params.id
-            const query = {_id : new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await itemsDB.findOne(query)
             res.send(result)
         })
 
-        app.get(`/submitted-assignment`, verifyToken, async(req,res)=>{
-            const response = req.query.email
-            const result = await assignmentDB.find(response).toArray()
+        app.get(`/submitted-assignment`, verifyToken, async (req, res) => {
+            const result = await assignmentDB.find().toArray()
             res.send(result)
         })
-        app.get(`/submitted-assignment/:id`, verifyToken, async(req,res)=>{
+        app.get(`/submitted-assignment/:id`, verifyToken, async (req, res) => {
             const id = req.params.id
-            const query = {_id : new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await assignmentDB.findOne(query)
             res.send(result)
         })
 
-        
+        app.get(`/submitted-assignment/:email` )
+
+
 
 
 
@@ -115,7 +115,7 @@ async function run() {
 
         app.post('/jwt', async (req, res) => {
             const email = req.body
-            console.log("email paise",email);
+            console.log("email paise", email);
             const token = jwt.sign(email, process.env.VERIFY_TOKEN, { expiresIn: "2h" })
             // console.log(token);
             res
@@ -127,8 +127,8 @@ async function run() {
                 .send(token)
         })
 
-        app.post(`/submitted-assignment`, async(req,res)=>{
-            const assignmentData=req.body
+        app.post(`/submitted-assignment`, async (req, res) => {
+            const assignmentData = req.body
             console.log(assignmentData);
             const result = await assignmentDB.insertOne(assignmentData)
             res.send(result)
@@ -163,14 +163,14 @@ async function run() {
             const item = req.body
             const { Givenmark, Comment, statuss } = item
             const id = req.params.id
-            console.log(Givenmark,Comment, statuss);
+            console.log(Givenmark, Comment, statuss);
             console.log(id);
             const filter = { _id: new ObjectId(id) }
             const options = { upsert: true }
 
             const updateDoc = {
                 $set: {
-                    Givenmarks : Givenmark , Comments : Comment , status : statuss
+                    Givenmarks: Givenmark, Comments: Comment, status: statuss
                 }
             }
             const result = await assignmentDB.updateOne(filter, updateDoc, options)
@@ -179,9 +179,9 @@ async function run() {
 
 
         //DELETE METHOD
-        app.delete('/items/:id', async (req,res)=>{
+        app.delete('/items/:id', async (req, res) => {
             const id = req.params.id
-            const query = {_id : new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await itemsDB.deleteOne(query)
             res.send(result)
 
