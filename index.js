@@ -16,9 +16,9 @@ app.get('/', async (req, res) => {
     res.send('Welcome to Server my Self')
 })
 
-console.log(process.env.DB_USER);
-console.log(process.env.DB_PASS);
-console.log(process.env.VERIFY_TOKEN);
+// console.log(process.env.DB_USER);
+// console.log(process.env.DB_PASS);
+// console.log(process.env.VERIFY_TOKEN);
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -89,7 +89,8 @@ async function run() {
         })
 
         app.get(`/submitted-assignment`, verifyToken, async(req,res)=>{
-            const result = await assignmentDB.find().toArray()
+            const response = req.query.email
+            const result = await assignmentDB.find(response).toArray()
             res.send(result)
         })
         app.get(`/submitted-assignment/:id`, verifyToken, async(req,res)=>{
