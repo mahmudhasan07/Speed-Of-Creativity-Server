@@ -3,12 +3,10 @@ const cors = require("cors")
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser')
 require('dotenv').config()
-const multer = require('multer');
-const upload = multer({ dest: 'uploads/' });
 const app = express()
 const port = process.env.PORT || 5000
 app.use(cors({
-    origin: [`http://localhost:5173`, `http://localhost:5174`],
+    origin: [`https://speed-of-creativity.web.app`, `https://speed-of-creativity.firebaseapp.com`, `http://localhost:5173`],
     credentials: true
 }))
 app.use(express.json())
@@ -18,9 +16,6 @@ app.get('/', async (req, res) => {
     res.send('Welcome to Server my Self')
 })
 
-// console.log(process.env.DB_USER);
-// console.log(process.env.DB_PASS);
-// console.log(process.env.VERIFY_TOKEN);
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -58,14 +53,26 @@ async function run() {
 
         const itemsDB = client.db('speed-creative').collection('assignments')
         const assignmentDB = client.db('speed-creative').collection('submit-assignments')
+        const commentDB = client.db('speed-creative').collection('comments')
 
-        await client.connect();
+        // await client.connect();
 
         // GET METHOD
 
         app.get('/items', async (req, res) => {
             const result = await itemsDB.find().toArray()
             res.send(result)
+        })
+
+        app.get(`/items/latest`, async(req,res)=>{
+            const result = await itemsDB.find().sort({date : -1 }).toArray()
+            res.send(result)
+        
+        })
+        app.get(`/items/oldest`, async(req,res)=>{
+            const result = await itemsDB.find().sort({date : 1 }).toArray()
+            res.send(result)
+        
         })
 
         app.get(`/items/info/:title`, async (req, res) => {
@@ -89,8 +96,11 @@ async function run() {
             res.send(result)
         })
 
-        app.get(`/submitted-assignment`, verifyToken, async (req, res) => {
-            const result = await assignmentDB.find().toArray()
+        app.get(`/submitted-assignment`, async (req, res) => {
+            const query = {}
+            const id = req.query.email
+            // console.log(id);
+            const result = await assignmentDB.find(query).toArray()
             res.send(result)
         })
         app.get(`/submitted-assignment/:id`, verifyToken, async (req, res) => {
@@ -100,11 +110,20 @@ async function run() {
             res.send(result)
         })
 
-        app.get(`/submitted-assignment/email/:email`, async (req, res) => {
+        app.get(`/submitted-assignment/email/:email`, verifyToken, async (req, res) => {
             const id = req.params.email
-            const query = { Submitemail : id }
+        
+            if (id !== req.user?.email) {
+                return res.status(403).send({ message: "Unauthorized Access!" });
+            }
+            const query = { Submitemail: id }
             const result = await assignmentDB.find(query).toArray()
             res.send(result)
+        })
+
+        app.get(`/comment`, async (req, res) => {
+            const comment = await commentDB.find().toArray();
+            res.send(comment)
         })
 
 
@@ -128,17 +147,24 @@ async function run() {
             res
                 .cookie("token", token, {
                     httpOnly: true,
-                    secure: false,
+                    secure: true,
                     sameSite: process.env.NODE_ENV === "production" ? "none" : "strict"
                 })
                 .send(token)
         })
 
-        app.post(`/submitted-assignment`,  async (req, res) => {
+        app.post(`/submitted-assignment`, async (req, res) => {
             const assignmentData = req.body
             console.log(assignmentData);
             const result = await assignmentDB.insertOne(assignmentData)
             res.send(result)
+        })
+
+        app.post(`/comment`, async (req, res) => {
+            const comment = req.body;
+            const result = await commentDB.insertOne(comment)
+            res.send(result)
+
         })
 
         // app.post(`/submitted-assignment/:id`, async (req, res)=>{
@@ -195,7 +221,7 @@ async function run() {
         })
 
 
-        await client.db("admin").command({ ping: 1 });
+        // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
