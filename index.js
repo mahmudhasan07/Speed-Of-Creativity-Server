@@ -3,6 +3,8 @@ const cors = require("cors")
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser')
 require('dotenv').config()
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
 const app = express()
 const port = process.env.PORT || 5000
 app.use(cors({
@@ -35,7 +37,7 @@ const client = new MongoClient(uri, {
 
 const verifyToken = async (req, res, next) => {
     const token = req.cookies?.token
-    console.log("verfy token", token);
+    // console.log("verfy token", token);
     if (!token) {
         return res.status(401).send({ auth: false, message: 'UnAuthorize' });
     }
@@ -43,7 +45,7 @@ const verifyToken = async (req, res, next) => {
         if (error) {
             return res.status(401).send({ auth: false, message: "You can't Access this" });
         }
-        console.log("Mahmud paise", decoded);
+        // console.log("Mahmud paise", decoded);
         req.user = decoded
         next()
     })
@@ -98,9 +100,12 @@ async function run() {
             res.send(result)
         })
 
-        app.get(`/submitted-assignment/:email`, async(req,res)=>{
-            const email=req.params.email
-        } )
+        app.get(`/submitted-assignment/email/:email`, async (req, res) => {
+            const id = req.params.email
+            const query = { Submitemail : id }
+            const result = await assignmentDB.find(query).toArray()
+            res.send(result)
+        })
 
 
 
@@ -129,7 +134,7 @@ async function run() {
                 .send(token)
         })
 
-        app.post(`/submitted-assignment`, async (req, res) => {
+        app.post(`/submitted-assignment`,  async (req, res) => {
             const assignmentData = req.body
             console.log(assignmentData);
             const result = await assignmentDB.insertOne(assignmentData)
